@@ -35,4 +35,5 @@ public class OcrController {
                     .body(Map.of("error", "OCR engine internal execution error: " + e.getMessage()));
         }
     }
+
 }
