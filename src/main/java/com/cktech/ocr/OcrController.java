@@ -5,11 +5,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import com.cktech.ocr.OcrService;
-
+import com.cktech.ocr.model.field.FieldDTO;
 import java.util.Map;
 
 @RestController
 @RequestMapping("/api")
+@GetMapping("/field/{id}")
+public ResponseEntity<FieldDTO> getById(@PathVariable Long id) {
+    return ResponseEntity.ok(ocrService.getById(id));
+}
 public class OcrController {
 
     private final com.cktech.ocr.OcrService ocrService;

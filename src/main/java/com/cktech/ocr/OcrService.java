@@ -5,7 +5,8 @@ import net.sourceforge.tess4j.TesseractException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
-
+import com.cktech.ocr.model.field.FieldDTO;
+import com.cktech.ocr.repository.common.FieldRepository;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -22,12 +23,14 @@ public class OcrService {
 
 
     private final Tesseract tesseract;
+    private final FieldRepository fieldRepository;
     // Hard concurrency gate protecting the engine from memory/CPU spikes
     private final Semaphore processingGate = new Semaphore(2);
 
     public OcrService(
-            @Value("${tesseract.datapath}") String tessDataPath) {
-
+            @Value("${tesseract.datapath}") String tessDataPath,
+            FieldRepository fieldRepository) {
+        this.fieldRepository = fieldRepository;
         this.tesseract = new Tesseract();
         tesseract.setDatapath(tessDataPath);
         tesseract.setLanguage("eng");
@@ -141,5 +144,8 @@ public class OcrService {
 
         result.put("rawExtractedText", rawText.trim());
         return result;
+    }
+    public FieldDTO getById(Long id) {
+        return fieldRepository.findById(id).orElseThrow();
     }
 }
