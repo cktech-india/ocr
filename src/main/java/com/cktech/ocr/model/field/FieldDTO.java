@@ -1,3 +1,12 @@
+package com.cktech.ocr.model.field;
+
+import com.cktech.ocr.model.dto.Auditable;
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
+
 @Data
 @Entity
 @Table(name = "field_t")
