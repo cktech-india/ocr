@@ -1,7 +1,7 @@
 package com.cktech.ocr.service;
 
 import com.cktech.ocr.model.field.FieldDTO;
-import com.cktech.ocr.repository.common.FieldRepository;
+import com.cktech.ocr.repository.FieldRepository;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

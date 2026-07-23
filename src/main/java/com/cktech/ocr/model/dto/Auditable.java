@@ -1,6 +1,6 @@
 package com.cktech.ocr.model.dto;
 
-import com.cktech.ecom.common.AppEnum;
+import com.cktech.ocr.common.AppEnum;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Data;

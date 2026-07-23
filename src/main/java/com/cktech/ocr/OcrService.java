@@ -6,7 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.cktech.ocr.model.field.FieldDTO;
-import com.cktech.ocr.repository.common.FieldRepository;
+import com.cktech.ocr.repository.FieldRepository;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
