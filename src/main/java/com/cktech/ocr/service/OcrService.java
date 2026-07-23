@@ -129,6 +129,7 @@ public class OcrService {
         Matcher aadhaarMatcher = aadhaarPattern.matcher(rawText);
         Matcher dobMatcher = dobPattern.matcher(rawText);
 
+
         if (panMatcher.find()) {
             result.put("documentType", "PAN");
             result.put("idNumber", panMatcher.group(0));
