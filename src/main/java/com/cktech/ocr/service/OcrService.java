@@ -1,4 +1,4 @@
-package com.cktech.ocr;
+package com.cktech.ocr.service;
 
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;

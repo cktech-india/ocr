@@ -1,5 +1,6 @@
-package com.cktech.ocr;
+package com.cktech.ocr.controller;
 
+import com.cktech.ocr.service.OcrService;
 import com.cktech.ocr.model.field.FieldDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
