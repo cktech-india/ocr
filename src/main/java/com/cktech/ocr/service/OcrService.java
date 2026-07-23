@@ -2,6 +2,8 @@ package com.cktech.ocr.service;
 
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -20,7 +22,7 @@ import java.util.regex.Pattern;
 @Service
 public class OcrService {
 
-
+    private static final Logger LOG = LoggerFactory.getLogger(OcrService.class);
 
     private final Tesseract tesseract;
     private final FieldRepository fieldRepository;
@@ -60,6 +62,9 @@ public class OcrService {
 
             // 4. Structural Clean up and Mapping via Regex
             return parseKycDetails(rawText);
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+            return Map.of("error", e.getMessage());
         } finally {
             processingGate.release();
         }
