@@ -8,12 +8,12 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import com.cktech.ocr.model.field.FieldDTO;
-import com.cktech.ocr.repository.FieldRepository;
 import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.regex.Matcher;
@@ -25,14 +25,14 @@ public class OcrService {
     private static final Logger LOG = LoggerFactory.getLogger(OcrService.class);
 
     private final Tesseract tesseract;
-    private final FieldRepository fieldRepository;
+    private final FieldService fieldService;
     // Hard concurrency gate protecting the engine from memory/CPU spikes
     private final Semaphore processingGate = new Semaphore(2);
 
     public OcrService(
             @Value("${tesseract.datapath}") String tessDataPath,
-            FieldRepository fieldRepository) {
-        this.fieldRepository = fieldRepository;
+            FieldService fieldService) {
+        this.fieldService = fieldService;
         this.tesseract = new Tesseract();
         tesseract.setDatapath(tessDataPath);
         tesseract.setLanguage("eng");
@@ -44,7 +44,8 @@ public class OcrService {
         tesseract.setTessVariable("tessedit_char_whitelist", "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/ ");
     }
 
-    public Map<String, Object> processKycDocument(MultipartFile file) throws IOException, TesseractException, InterruptedException {
+    public Map<String, Object> processKycDocument(MultipartFile file, String screenCode)
+            throws IOException, TesseractException, InterruptedException {
         // Enforce rate limiting to block simultaneous processing crashes
         processingGate.acquire();
         try {
@@ -60,8 +61,8 @@ public class OcrService {
             // 3. Native JNA Call to Engine
             String rawText = tesseract.doOCR(processedImage);
 
-            // 4. Structural Clean up and Mapping via Regex
-            return parseKycDetails(rawText);
+            // 4. Structural Clean up and Mapping via dynamic field rules
+            return parseKycDetails(rawText, screenCode);
         } catch (Exception e) {
             LOG.error(e.getMessage());
             return Map.of("error", e.getMessage());
@@ -118,40 +119,23 @@ public class OcrService {
         return binarized;
     }
 
-    private Map<String, Object> parseKycDetails(String rawText) {
+    // Dynamic extraction driven entirely by field_t rules configured for the given screenCode
+    private Map<String, Object> parseKycDetails(String rawText, String screenCode) {
         Map<String, Object> result = new HashMap<>();
+        result.put("screenCode", screenCode);
 
-        Pattern panPattern = Pattern.compile("[A-Z]{5}[0-9]{4}[A-Z]{1}");
-        Pattern aadhaarPattern = Pattern.compile("\\b[2-9]{1}[0-9]{3}\\s[0-9]{4}\\s[0-9]{4}\\b|\\b[2-9]{1}[0-9]{11}\\b");
-        Pattern dobPattern = Pattern.compile("\\b\\d{2}/\\d{2}/\\d{4}\\b");
+        List<FieldDTO> fields = fieldService.getFieldsForScreen(screenCode);
 
-        Matcher panMatcher = panPattern.matcher(rawText);
-        Matcher aadhaarMatcher = aadhaarPattern.matcher(rawText);
-        Matcher dobMatcher = dobPattern.matcher(rawText);
+        for (FieldDTO field : fields) {
+            Pattern pattern = Pattern.compile(field.getPattern());
+            Matcher matcher = pattern.matcher(rawText);
+            if(!result.containsKey(field.getFieldCode()) && matcher.find()) {
+                result.put(field.getFieldCode(), matcher.group(0));
+            }
 
-
-        if (panMatcher.find()) {
-            result.put("documentType", "PAN");
-            result.put("idNumber", panMatcher.group(0));
-        } else if (aadhaarMatcher.find()) {
-            result.put("documentType", "AADHAAR");
-            // Standardize output format by stripping out space characters
-            result.put("idNumber", aadhaarMatcher.group(0).replaceAll("\\s+", ""));
-        } else {
-            result.put("documentType", "UNKNOWN");
-            result.put("idNumber", null);
-        }
-
-        if (dobMatcher.find()) {
-            result.put("dob", dobMatcher.group(0));
-        } else {
-            result.put("dob", null);
         }
 
         result.put("rawExtractedText", rawText.trim());
         return result;
-    }
-    public FieldDTO getById(Long id) {
-        return fieldRepository.findById(id).orElseThrow();
     }
 }

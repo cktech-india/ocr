@@ -31,6 +31,10 @@ public class FieldService {
         return fieldRepository.findByIsDeletedFalseAndIsActiveTrue();
     }
 
+    public List<FieldDTO> getFieldsForScreen(String screenCode) {
+        return fieldRepository.findByScreenCodeAndIsDeletedFalse(screenCode);
+    }
+
     public void delete(Long id) {
         var data = fieldRepository.findById(id).orElseThrow();
         data.setIsDeleted(true);

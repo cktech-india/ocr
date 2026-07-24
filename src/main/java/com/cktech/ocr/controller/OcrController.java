@@ -1,7 +1,6 @@
 package com.cktech.ocr.controller;
 
 import com.cktech.ocr.service.OcrService;
-import com.cktech.ocr.model.field.FieldDTO;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -19,13 +18,10 @@ public class OcrController {
         this.ocrService = ocrService;
     }
 
-    @GetMapping("/field/{id}")
-    public ResponseEntity<FieldDTO> getById(@PathVariable Long id) {
-        return ResponseEntity.ok(ocrService.getById(id));
-    }
-
     @PostMapping(value = "/ocr", consumes = "multipart/form-data")
-    public ResponseEntity<Map<String, Object>> extractOcr(@RequestParam("file") MultipartFile file) {
+    public ResponseEntity<Map<String, Object>> extractOcr(
+            @RequestParam("file") MultipartFile file,
+            @RequestParam("screenCode") String screenCode) {
 
         if (file.isEmpty()) {
             return ResponseEntity.badRequest()
@@ -33,16 +29,14 @@ public class OcrController {
         }
 
         try {
-            Map<String, Object> response = ocrService.processKycDocument(file);
+            Map<String, Object> response = ocrService.processKycDocument(file, screenCode);
             return ResponseEntity.ok(response);
 
         } catch (IllegalArgumentException e) {
-
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(Map.of("error", e.getMessage()));
 
         } catch (Exception e) {
-
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("error", "OCR engine internal execution error: " + e.getMessage()));
         }
