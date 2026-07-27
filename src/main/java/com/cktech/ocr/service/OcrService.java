@@ -2,6 +2,9 @@ package com.cktech.ocr.service;
 
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.rendering.PDFRenderer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -49,10 +52,10 @@ public class OcrService {
         // Enforce rate limiting to block simultaneous processing crashes
         processingGate.acquire();
         try {
-            // 1. Read input stream cleanly into a Buffered Memory Space
-            BufferedImage originalImage = ImageIO.read(file.getInputStream());
+            // 1. Read input stream cleanly into a Buffered Memory Space (image or PDF)
+            BufferedImage originalImage = loadAsImageAndPdf(file);
             if (originalImage == null) {
-                throw new IllegalArgumentException("Invalid or corrupt image stream.");
+                throw new IllegalArgumentException("Invalid or corrupt document. Only image (JPG/PNG) or PDF files are supported.");
             }
 
             // 2. Perform Downsizing and Contrast Normalization
@@ -69,6 +72,23 @@ public class OcrService {
         } finally {
             processingGate.release();
         }
+    }
+
+    // Detects PDF vs image content type and normalizes both into a single BufferedImage
+    private BufferedImage loadAsImageAndPdf(MultipartFile file) throws IOException {
+        String contentType = file.getContentType();
+
+        if (contentType != null && contentType.equalsIgnoreCase("application/pdf")) {
+            try (PDDocument document = Loader.loadPDF(file.getBytes())) {
+                if (document.getNumberOfPages() == 0) {
+                    return null;
+                }
+                PDFRenderer renderer = new PDFRenderer(document);
+                return renderer.renderImageWithDPI(0, 300);
+            }
+        }
+
+        return ImageIO.read(file.getInputStream());
     }
 
     private BufferedImage preprocessImage(BufferedImage src) {
@@ -129,10 +149,9 @@ public class OcrService {
         for (FieldDTO field : fields) {
             Pattern pattern = Pattern.compile(field.getPattern());
             Matcher matcher = pattern.matcher(rawText);
-            if(!result.containsKey(field.getFieldCode()) && matcher.find()) {
+            if (!result.containsKey(field.getFieldCode()) && matcher.find()) {
                 result.put(field.getFieldCode(), matcher.group(0));
             }
-
         }
 
         result.put("rawExtractedText", rawText.trim());
